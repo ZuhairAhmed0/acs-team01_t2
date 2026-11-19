@@ -1,0 +1,50 @@
+services:
+  # --------------------------------------------------------------------------
+  # Backend Web Service
+  # --------------------------------------------------------------------------
+  - type: web
+    name: fuel-wallet-backend
+    runtime: node
+    plan: free
+    rootDir: server
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: CLERK_SECRET_KEY
+        sync: false
+      - key: CORS_ORIGIN
+        value: "*"
+      - key: TOPUP_MIN
+        value: "1000"
+      - key: TOPUP_MAX
+        value: "500000"
+      - key: BANK_LATENCY_MS
+        value: "400"
+      - key: PENDING_TIMEOUT_SECONDS
+        value: "60"
+
+  # --------------------------------------------------------------------------
+  # Frontend Static Site
+  # --------------------------------------------------------------------------
+  - type: web
+    name: fuel-wallet-frontend
+    runtime: static
+    rootDir: client
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_CLERK_PUBLISHABLE_KEY
+        sync: false
+      - key: VITE_API_URL
+        sync: false

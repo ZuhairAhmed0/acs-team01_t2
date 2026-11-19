@@ -1,0 +1,238 @@
+### ============================================================================
+### Fuel Wallet Backend — VS Code REST Client (api.http)
+### ============================================================================
+
+@baseUrl = http://localhost:3000
+@token = replace_with_clerk_session_jwt_token
+@stationAId = 00000000-0000-0000-0000-000000000001
+@stationBId = 00000000-0000-0000-0000-000000000002
+@mainWalletId = 00000000-0000-0000-0000-000000000003
+@stationAWalletId = 00000000-0000-0000-0000-000000000004
+@transactionId = 00000000-0000-0000-0000-000000000005
+@userId = 00000000-0000-0000-0000-000000000006
+@verificationCode = 123456
+
+### ----------------------------------------------------------------------------
+### 0. Health Check
+### ----------------------------------------------------------------------------
+
+### Health Check
+GET {{baseUrl}}/health
+Accept: application/json
+
+
+### ----------------------------------------------------------------------------
+### 1. Identity & Wallets (Phase 1)
+### ----------------------------------------------------------------------------
+
+### Get Authenticated User Profile & Wallets
+GET {{baseUrl}}/api/me
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ----------------------------------------------------------------------------
+### 2. Stations (Phase 2)
+### ----------------------------------------------------------------------------
+
+### List All Stations (with caller's station & main balances)
+GET {{baseUrl}}/api/stations
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### List Stations Filtered by City
+GET {{baseUrl}}/api/stations?city=الخرطوم
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Get Single Station by ID
+GET {{baseUrl}}/api/stations/{{stationAId}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ----------------------------------------------------------------------------
+### 3. Top-Ups (Phase 4)
+### ----------------------------------------------------------------------------
+
+### Top Up Main Wallet (30,000 SDG)
+POST {{baseUrl}}/api/topups
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: demo-topup-0001
+
+{
+  "amount": 30000
+}
+
+
+### ----------------------------------------------------------------------------
+### 4. Transfers (Phase 5)
+### ----------------------------------------------------------------------------
+
+### Transfer from Main Wallet -> Station A (20,000 SDG)
+POST {{baseUrl}}/api/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: demo-transfer-main-to-a-0001
+
+{
+  "fromWalletId": "{{mainWalletId}}",
+  "to": {
+    "type": "STATION",
+    "stationId": "{{stationAId}}"
+  },
+  "amount": 20000
+}
+
+### Transfer from Station A Wallet -> Station B (8,000 SDG)
+POST {{baseUrl}}/api/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: demo-transfer-a-to-b-0001
+
+{
+  "fromWalletId": "{{stationAWalletId}}",
+  "to": {
+    "type": "STATION",
+    "stationId": "{{stationBId}}"
+  },
+  "amount": 8000
+}
+
+### Transfer from Station A Wallet -> Main Wallet
+POST {{baseUrl}}/api/transfers
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: demo-transfer-a-to-main-0001
+
+{
+  "fromWalletId": "{{stationAWalletId}}",
+  "to": {
+    "type": "MAIN"
+  },
+  "amount": 5000
+}
+
+
+### ----------------------------------------------------------------------------
+### 5. Payments (Phase 6)
+### ----------------------------------------------------------------------------
+
+### Pay at Station A (12,000 SDG from Station A Wallet)
+POST {{baseUrl}}/api/payments
+Authorization: Bearer {{token}}
+Content-Type: application/json
+Idempotency-Key: demo-payment-station-a-0001
+
+{
+  "stationId": "{{stationAId}}",
+  "sourceWalletId": "{{stationAWalletId}}",
+  "amount": 12000
+}
+
+
+### ----------------------------------------------------------------------------
+### 6. Transaction History & Wallet Statements (Phase 7)
+### ----------------------------------------------------------------------------
+
+### List Caller's Transactions (Cursor Paginated)
+GET {{baseUrl}}/api/transactions?limit=20
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### List Caller's Transactions Filtered by Type & Status
+GET {{baseUrl}}/api/transactions?limit=20&type=PAYMENT&status=COMPLETED
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Get Single Transaction by ID (Used to poll PENDING transactions)
+GET {{baseUrl}}/api/transactions/{{transactionId}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Get Wallet Ledger Statement (Cursor Paginated)
+GET {{baseUrl}}/api/wallets/{{mainWalletId}}/ledger?limit=20
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ----------------------------------------------------------------------------
+### 7. Operator Tools (Phase 9 — Role: OPERATOR or ADMIN)
+### ----------------------------------------------------------------------------
+
+### List COMPLETED Payments into Operator's Station
+GET {{baseUrl}}/api/operator/payments?limit=20
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Lookup COMPLETED Payment by 6-Digit Verification Code (Last 30 Minutes)
+GET {{baseUrl}}/api/operator/payments/lookup?code={{verificationCode}}
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Update Operator Station Congestion Level ('LOW' | 'MEDIUM' | 'HIGH')
+PATCH {{baseUrl}}/api/operator/station
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "congestion": "HIGH"
+}
+
+### Get Operator Station Daily Summary (Today's Total Amount & Payment Count)
+GET {{baseUrl}}/api/operator/summary
+Authorization: Bearer {{token}}
+Accept: application/json
+
+
+### ----------------------------------------------------------------------------
+### 8. Admin Tools & Integrity (Phases 4 & 8 — Role: ADMIN)
+### ----------------------------------------------------------------------------
+
+### Get Simulated Bank Gateway Status
+GET {{baseUrl}}/api/admin/bank-status
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Set Simulated Bank Gateway Status to DOWN
+POST {{baseUrl}}/api/admin/bank-status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "DOWN"
+}
+
+### Set Simulated Bank Gateway Status to UP
+POST {{baseUrl}}/api/admin/bank-status
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "UP"
+}
+
+### Run System-Wide Ledger & Wallet Reconciliation
+GET {{baseUrl}}/api/admin/reconcile
+Authorization: Bearer {{token}}
+Accept: application/json
+
+### Activate or Deactivate a Station
+PATCH {{baseUrl}}/api/admin/stations/{{stationAId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "isActive": true
+}
+
+### Freeze or Unfreeze a User ('ACTIVE' | 'FROZEN')
+PATCH {{baseUrl}}/api/admin/users/{{userId}}
+Authorization: Bearer {{token}}
+Content-Type: application/json
+
+{
+  "status": "ACTIVE"
+}
+

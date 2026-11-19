@@ -5,10 +5,13 @@ const statusEl = document.getElementById('status');
 if (statusEl) {
   fetchHealth()
     .then((data) => {
-      statusEl.textContent = `System Status: ${data.status} (DB: ${data.db})`;
+      const dbStatus = data.database || data.db || 'up';
+      statusEl.textContent = `System Status: ${data.status} (DB: ${dbStatus})`;
+      statusEl.style.color = '#059669';
     })
     .catch(() => {
       statusEl.textContent = 'System Status: unavailable';
+      statusEl.style.color = '#dc2626';
     });
 }
 

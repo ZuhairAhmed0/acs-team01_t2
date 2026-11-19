@@ -17,10 +17,17 @@ const rawApiUrl =
  * to `http://localhost:3000/api` as same-origin requests (avoiding browser CORS blocks).
  */
 function resolveApiBaseUrl(configuredUrl: string): string {
-  if (import.meta.env.DEV && /^https?:\/\/localhost:3000\/api\/?$/i.test(configuredUrl)) {
+  if (import.meta.env.DEV && /^https?:\/\/localhost:3000(\/api)?\/?$/i.test(configuredUrl)) {
     return '/api';
   }
-  return configuredUrl.replace(/\/+$/, '');
+  const cleanUrl = configuredUrl.replace(/\/+$/, '');
+  if (!cleanUrl || cleanUrl === '') {
+    return '/api';
+  }
+  if (!cleanUrl.endsWith('/api')) {
+    return `${cleanUrl}/api`;
+  }
+  return cleanUrl;
 }
 
 export const env = {

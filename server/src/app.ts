@@ -68,6 +68,25 @@ export function createApp(): Express {
     res.status(200).json({ status: 'ok', database: 'up' });
   });
 
+  // Support clients that omit the '/api' prefix (e.g. calling /me instead of /api/me)
+  const rootApiPaths = [
+    '/me',
+    '/stations',
+    '/topups',
+    '/transfers',
+    '/payments',
+    '/wallets',
+    '/operator',
+    '/admin',
+    '/transactions',
+  ];
+  app.use((req: Request, _res: Response, next) => {
+    if (rootApiPaths.some((p) => req.path === p || req.path.startsWith(`${p}/`))) {
+      req.url = `/api${req.url}`;
+    }
+    next();
+  });
+
   app.use('/api', apiRateLimiter, apiRouter);
 
   app.all('/api/*splat', (_req: Request, _res: Response) => {
